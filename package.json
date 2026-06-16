@@ -1,0 +1,25 @@
+{
+  "name": "defi-builder-cohort",
+  "version": "1.0.0",
+  "description": "",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bhaveshbanshiwal/defi_summercamp_blockchain.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/bhaveshbanshiwal/defi_summercamp_blockchain/issues"
+  },
+  "homepage": "https://github.com/bhaveshbanshiwal/defi_summercamp_blockchain#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "hardhat": "^3.9.0"
+  }
+}

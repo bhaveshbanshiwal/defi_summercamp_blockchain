@@ -1,1 +1,275 @@
-<html><body><h1>Token Vendor Interface</h1><button>Buy Tokens</button><hr><h1>DEX Interface</h1><button>Swap</button></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeFi Builder - Flask Interface</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.10.0/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary: #8b5cf6;
+            --secondary-hover: #7c3aed;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+        .card {
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            flex: 1;
+            text-align: center;
+        }
+        h1 { margin-top: 0; font-size: 1.5rem; text-align: center; width: 100%; margin-bottom: 30px; }
+        .info {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .balance { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .balance-sec { font-size: 1.2rem; font-weight: bold; color: var(--secondary); }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: filter 0.2s;
+        }
+        button:hover { filter: brightness(1.1); }
+        .btn-dex { background-color: var(--primary); }
+        .btn-vendor { background-color: var(--secondary); }
+        .btn-sell { background-color: #ef4444; }
+        .loader {
+            display: none;
+            margin-top: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🚀 DeFi Builder Interface</h1>
+    <div style="width: 100%; max-width: 900px; text-align: center; margin-bottom: 20px;">
+        <div class="info">
+            <p>Wallet Address: <span id="walletAddress">Loading...</span></p>
+            <p>Wallet ETH Balance: <span id="ethBalance" class="balance">0.00</span></p>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div class="card">
+            <h2>🥇 Week 1: Token Vendor</h2>
+            <div class="info">
+                <p>YourToken (GLD) Balance: <span id="gldBalance" class="balance-sec">0.00</span></p>
+                <p>Vendor Price: 100 GLD / ETH</p>
+            </div>
+            <div class="input-group">
+                <label>Amount (ETH to Buy / GLD to Sell)</label>
+                <input type="number" id="vendorAmount" placeholder="0.1" step="0.01">
+            </div>
+            <button class="btn-vendor" onclick="vendorBuy()">Buy GLD (ETH → GLD)</button>
+            <button class="btn-sell" onclick="vendorSell()">Sell GLD (GLD → ETH)</button>
+            <p class="loader" id="vendorStatus">Processing transaction...</p>
+        </div>
+
+        
+        <div class="card">
+            <h2>🎈 Week 2: DEX</h2>
+            <div class="info">
+                <p>Balloons (BAL) Balance: <span id="balBalance" class="balance">0.00</span></p>
+                <p>DEX Price: AMM Curve</p>
+            </div>
+            <div class="input-group">
+                <label>Amount (ETH to Buy / BAL to Sell)</label>
+                <input type="number" id="dexAmount" placeholder="0.1" step="0.01">
+            </div>
+            <button class="btn-dex" onclick="dexBuy()">Buy BAL (ETH → BAL)</button>
+            <button class="btn-sell" onclick="dexSell()">Sell BAL (BAL → ETH)</button>
+            <p class="loader" id="dexStatus">Processing transaction...</p>
+        </div>
+    </div>
+
+    <script>
+        const YOUR_TOKEN_ADDRESS = "{{ your_token_address }}";
+        const VENDOR_ADDRESS = "{{ vendor_address }}";
+        const BALLOONS_ADDRESS = "{{ balloons_address }}";
+        const DEX_ADDRESS = "{{ dex_address }}";
+
+        const tokenABI = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function approve(address spender, uint256 amount) returns (bool)"
+        ];
+
+        const vendorABI = [
+            "function buyTokens() payable",
+            "function sellTokens(uint256 amount)"
+        ];
+
+        const dexABI = [
+            "function ethToToken() payable returns (uint256)",
+            "function tokenToEth(uint256 tokenInput) returns (uint256)"
+        ];
+
+        let provider, wallet;
+        let yourTokenContract, vendorContract;
+        let balloonsContract, dexContract;
+
+        async function init() {
+            provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+
+            const hardhatPK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+            wallet = new ethers.Wallet(hardhatPK, provider);
+            
+            document.getElementById("walletAddress").innerText = wallet.address;
+
+            yourTokenContract = new ethers.Contract(YOUR_TOKEN_ADDRESS, tokenABI, wallet);
+            vendorContract = new ethers.Contract(VENDOR_ADDRESS, vendorABI, wallet);
+
+            balloonsContract = new ethers.Contract(BALLOONS_ADDRESS, tokenABI, wallet);
+            dexContract = new ethers.Contract(DEX_ADDRESS, dexABI, wallet);
+
+            updateBalances();
+        }
+
+        async function updateBalances() {
+            const ethBal = await provider.getBalance(wallet.address);
+            const gldBal = await yourTokenContract.balanceOf(wallet.address);
+            const balBal = await balloonsContract.balanceOf(wallet.address);
+            
+            document.getElementById("ethBalance").innerText = parseFloat(ethers.formatEther(ethBal)).toFixed(4);
+            document.getElementById("gldBalance").innerText = parseFloat(ethers.formatEther(gldBal)).toFixed(4);
+            document.getElementById("balBalance").innerText = parseFloat(ethers.formatEther(balBal)).toFixed(4);
+        }
+
+
+        async function vendorBuy() {
+            const val = document.getElementById("vendorAmount").value;
+            if(!val) return;
+            showStatus("vendorStatus", "Buying GLD from Vendor...");
+            try {
+                const tx = await vendorContract.buyTokens({ value: ethers.parseEther(val) });
+                await tx.wait();
+                showStatus("vendorStatus", "Buy successful! 🎉", 3000);
+                updateBalances();
+            } catch (e) {
+                console.error(e);
+                showStatus("vendorStatus", "Error: " + e.shortMessage, 5000);
+            }
+        }
+
+        async function vendorSell() {
+            const val = document.getElementById("vendorAmount").value;
+            if(!val) return;
+            showStatus("vendorStatus", "Approving Vendor...");
+            try {
+                const amount = ethers.parseEther(val);
+                const approveTx = await yourTokenContract.approve(VENDOR_ADDRESS, amount);
+                await approveTx.wait();
+
+                showStatus("vendorStatus", "Selling GLD to Vendor...");
+                const tx = await vendorContract.sellTokens(amount);
+                await tx.wait();
+
+                showStatus("vendorStatus", "Sell successful! 🎉", 3000);
+                updateBalances();
+            } catch (e) {
+                console.error(e);
+                showStatus("vendorStatus", "Error: " + e.shortMessage, 5000);
+            }
+        }
+
+
+        async function dexBuy() {
+            const val = document.getElementById("dexAmount").value;
+            if(!val) return;
+            showStatus("dexStatus", "Swapping ETH for BAL...");
+            try {
+                const tx = await dexContract.ethToToken({ value: ethers.parseEther(val) });
+                await tx.wait();
+                showStatus("dexStatus", "Swap successful! 🎉", 3000);
+                updateBalances();
+            } catch (e) {
+                console.error(e);
+                showStatus("dexStatus", "Error: " + e.shortMessage, 5000);
+            }
+        }
+
+        async function dexSell() {
+            const val = document.getElementById("dexAmount").value;
+            if(!val) return;
+            showStatus("dexStatus", "Approving DEX...");
+            try {
+                const amount = ethers.parseEther(val);
+                const approveTx = await balloonsContract.approve(DEX_ADDRESS, amount);
+                await approveTx.wait();
+
+                showStatus("dexStatus", "Swapping BAL for ETH...");
+                const tx = await dexContract.tokenToEth(amount);
+                await tx.wait();
+
+                showStatus("dexStatus", "Swap successful! 🎉", 3000);
+                updateBalances();
+            } catch (e) {
+                console.error(e);
+                showStatus("dexStatus", "Error: " + e.shortMessage, 5000);
+            }
+        }
+
+        function showStatus(id, msg, timeout=0) {
+            const el = document.getElementById(id);
+            el.style.display = "block";
+            el.innerText = msg;
+            if (timeout > 0) {
+                setTimeout(() => el.style.display = "none", timeout);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

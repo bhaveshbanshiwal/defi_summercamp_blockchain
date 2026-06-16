@@ -1,7 +1,18 @@
 from flask import Flask, render_template
+
 app = Flask(__name__)
-@app.route("/")
+
+DEX_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+BALLOONS_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+
+@app.route('/')
 def index():
-    return render_template("index.html")
-if __name__ == "__main__":
-    app.run(debug=True)
+    return render_template('index.html', 
+        your_token_address="0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+        vendor_address="0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+        balloons_address="0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        dex_address="0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+    )
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

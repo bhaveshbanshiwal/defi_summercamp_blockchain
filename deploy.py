@@ -24,11 +24,15 @@ def main():
     if os.path.exists("package.json"):
         subprocess.run([npm_cmd, "pkg", "set", "type=module"], stdout=subprocess.DEVNULL)
 
+    def start_hardhat_node():
+        print("? Starting local blockchain (Hardhat Node) in the background...")
+        npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+        proc = subprocess.Popen([npx_cmd, "hardhat", "node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(5) # Wait for node to spin up
+        return proc
+
     # 2. Start local blockchain (Hardhat Node)
-    print("? Starting local blockchain (Hardhat Node) in the background...")
-    npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
-    node_process = subprocess.Popen([npx_cmd, "hardhat", "node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(5) # Wait for node to spin up
+    node_process = start_hardhat_node()
     
     def connect_web3():
         w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))

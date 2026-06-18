@@ -14,15 +14,18 @@ def main():
         with open("hardhat.config.js", "w") as f:
             f.write("export default { solidity: '0.8.20' };\n")
 
+    def install_dependencies():
+        npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+        if not os.path.exists("node_modules/@openzeppelin"):
+            print("📦 Installing Hardhat and OpenZeppelin contracts via NPM...")
+            subprocess.run([npm_cmd, "init", "-y"], stdout=subprocess.DEVNULL)
+            subprocess.run([npm_cmd, "install", "hardhat", "@openzeppelin/contracts"], stdout=subprocess.DEVNULL)
+        
+        if os.path.exists("package.json"):
+            subprocess.run([npm_cmd, "pkg", "set", "type=module"], stdout=subprocess.DEVNULL)
+
     # 1. Install OpenZeppelin AND Hardhat if missing
-    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
-    if not os.path.exists("node_modules/@openzeppelin"):
-        print("📦 Installing Hardhat and OpenZeppelin contracts via NPM...")
-        subprocess.run([npm_cmd, "init", "-y"], stdout=subprocess.DEVNULL)
-        subprocess.run([npm_cmd, "install", "hardhat", "@openzeppelin/contracts"], stdout=subprocess.DEVNULL)
-    
-    if os.path.exists("package.json"):
-        subprocess.run([npm_cmd, "pkg", "set", "type=module"], stdout=subprocess.DEVNULL)
+    install_dependencies()
 
     def start_hardhat_node():
         print("? Starting local blockchain (Hardhat Node) in the background...")

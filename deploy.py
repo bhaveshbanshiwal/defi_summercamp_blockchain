@@ -30,12 +30,18 @@ def main():
     node_process = subprocess.Popen([npx_cmd, "hardhat", "node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(5) # Wait for node to spin up
     
+    def connect_web3():
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+        if w3.is_connected():
+            print("? Connected to local blockchain successfully!")
+            return w3
+        else:
+            print("? Failed to connect to blockchain.")
+            return None
+
     # 3. Connect Web3
-    w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
-    if w3.is_connected():
-        print("? Connected to local blockchain successfully!")
-    else:
-        print("? Failed to connect to blockchain.")
+    w3 = connect_web3()
+    if not w3:
         node_process.terminate()
         return
 

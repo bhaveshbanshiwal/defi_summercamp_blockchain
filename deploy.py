@@ -56,30 +56,33 @@ def main():
     deployer_account = w3.eth.accounts[0]
     w3.eth.default_account = deployer_account
     
-    # 4. Compile contracts
-    print("?? Compiling Solidity smart contracts...")
-    install_solc("0.8.20")
-    
-    def read_file(path):
-        with open(path, "r") as f: return f.read()
+    def compile_contracts():
+        print("?? Compiling Solidity smart contracts...")
+        install_solc("0.8.20")
+        
+        def read_file(path):
+            with open(path, "r") as f: return f.read()
 
-    # We use solcx to compile standard JSON directly from Python
-    compiled_sol = compile_standard(
-        {
-            "language": "Solidity",
-            "sources": {
-                "YourToken.sol": {"content": read_file("submissions/week1/YourToken.sol")},
-                "Vendor.sol": {"content": read_file("submissions/week1/Vendor.sol")},
-                "Balloons.sol": {"content": read_file("submissions/week2/Balloons.sol")},
-                "DEX.sol": {"content": read_file("submissions/week2/DEX.sol")},
+        # We use solcx to compile standard JSON directly from Python
+        return compile_standard(
+            {
+                "language": "Solidity",
+                "sources": {
+                    "YourToken.sol": {"content": read_file("submissions/week1/YourToken.sol")},
+                    "Vendor.sol": {"content": read_file("submissions/week1/Vendor.sol")},
+                    "Balloons.sol": {"content": read_file("submissions/week2/Balloons.sol")},
+                    "DEX.sol": {"content": read_file("submissions/week2/DEX.sol")},
+                },
+                "settings": {
+                    "remappings": ["@openzeppelin/=node_modules/@openzeppelin/"],
+                    "outputSelection": {"*": {"*": ["abi", "evm.bytecode"]}}
+                },
             },
-            "settings": {
-                "remappings": ["@openzeppelin/=node_modules/@openzeppelin/"],
-                "outputSelection": {"*": {"*": ["abi", "evm.bytecode"]}}
-            },
-        },
-        solc_version="0.8.20",
-    )
+            solc_version="0.8.20",
+        )
+
+    # 4. Compile contracts
+    compiled_sol = compile_contracts()
 
     # Helper function to deploy a compiled contract
     def deploy_contract(contract_file, contract_name, *args):

@@ -147,16 +147,19 @@ def main():
     # 7. Update Flask App with new addresses
     app_path = update_flask_app()
     
+    def start_flask_app(path):
+        print("\n?? Starting Flask Web Interface...")
+        print("?? CLICK HERE TO OPEN: http://127.0.0.1:5000\n")
+        try:
+            subprocess.run(["python", path])
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print("\nShutting down local blockchain node...")
+            node_process.terminate()
+
     # 8. Start Flask App
-    print("\n?? Starting Flask Web Interface...")
-    print("?? CLICK HERE TO OPEN: http://127.0.0.1:5000\n")
-    try:
-        subprocess.run(["python", app_path])
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print("\nShutting down local blockchain node...")
-        node_process.terminate()
+    start_flask_app(app_path)
 
 if __name__ == "__main__":
     main()

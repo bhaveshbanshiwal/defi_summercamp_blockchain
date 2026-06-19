@@ -122,26 +122,30 @@ def main():
     w3.eth.wait_for_transaction_receipt(tx)
     print("   -> ?? Initialized DEX liquidity pool (1 ETH & 100 BAL)")
 
-    # 7. Update Flask App with new addresses
-    print("\n?? Linking deployed addresses to Flask UI...")
-    app_path = "flask-interface/app.py"
-    with open(app_path, "r") as f:
-        lines = f.readlines()
-        
-    for i, line in enumerate(lines):
-        if "your_token_address=" in line:
-            lines[i] = f'        your_token_address="{token_address}",\n'
-        elif "vendor_address=" in line:
-            lines[i] = f'        vendor_address="{vendor_address}",\n'
-        elif "balloons_address=" in line:
-            lines[i] = f'        balloons_address="{balloons_address}",\n'
-        elif "dex_address=" in line:
-            lines[i] = f'        dex_address="{dex_address}"\n'
+    def update_flask_app():
+        print("\n?? Linking deployed addresses to Flask UI...")
+        app_path = "flask-interface/app.py"
+        with open(app_path, "r") as f:
+            lines = f.readlines()
+            
+        for i, line in enumerate(lines):
+            if "your_token_address=" in line:
+                lines[i] = f'        your_token_address="{token_address}",\n'
+            elif "vendor_address=" in line:
+                lines[i] = f'        vendor_address="{vendor_address}",\n'
+            elif "balloons_address=" in line:
+                lines[i] = f'        balloons_address="{balloons_address}",\n'
+            elif "dex_address=" in line:
+                lines[i] = f'        dex_address="{dex_address}"\n'
 
-    with open(app_path, "w") as f:
-        f.writelines(lines)
-        
-    print("? App successfully updated!")
+        with open(app_path, "w") as f:
+            f.writelines(lines)
+            
+        print("? App successfully updated!")
+        return app_path
+
+    # 7. Update Flask App with new addresses
+    app_path = update_flask_app()
     
     # 8. Start Flask App
     print("\n?? Starting Flask Web Interface...")
